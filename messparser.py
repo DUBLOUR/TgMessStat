@@ -1,10 +1,9 @@
-#def prepare_data(file_name="result.json"):
-def prepare_data(file_name="result_short.json"):
-    import datetime
-    import time
-    import json
-    import numpy as np
+import datetime
+import time
+import json
+import numpy as np
 
+def prepare_data(file_name="result.json"):
     min_in_day = 1440
     my_name = str()
     peoples_name = dict()
