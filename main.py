@@ -4,10 +4,11 @@ import datetime
 import time
 import os
 import sys
-import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import messparser
+
 
 min_in_day = 1440
 possible_smooth = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 32, 36, 40, 45, 48, 60]
@@ -16,7 +17,7 @@ now_chat_id = 0
 smooth_id = -1
 main_plot_mode = 1
 my_name = str()
-peoples_name = dict()
+
 
 
 def print_time_label(text, start=None):
@@ -76,123 +77,6 @@ def press(event):
     draw_chat(now_chat_id, smooth_id, main_plot_mode)
     print(time.process_time() - last_press_event_time)
 
-
-
-def get_contacts_data():
-    global peoples_name
-
-    me = base["personal_information"]
-    global my_name
-    my_name = me["first_name"] + " " + me["last_name"]
-    peoples_name[me["user_id"]] = my_name
-    
-    contacts = base["frequent_contacts"]["list"]
-    for x in contacts:
-        if "category" in x and x["category"] == "people":
-            peoples_name[x["id"]] = str(x["name"])
-
-    
-
-def parse_chat(chat):
-
-    def get_score(mess):
-        def get_len(text):
-            if isinstance(text, str):
-                return len(text)
-            res = 0
-            for x in text:
-                if isinstance(x, str):
-                    res += len(x)
-                else:
-                    res += len(x["text"])
-            return res
-
-
-        text_len = get_len(mess["text"]) #can be string or list of object
-        photo = int("photo" in mess)
-        voice_len = 0
-        sticker = 0
-        
-        if "media_type" in mess:
-            tp = mess["media_type"]
-            if (tp == "voice_message" or tp == "animation") \
-                    and "duration_seconds" in mess:
-                voice_len = mess["duration_seconds"]
-                
-            if tp == "sticker":
-                sticker = 1
-
-            if tp == "audio_file" or tp == "video_file":
-                pass
-
-        score = (
-            text_len * 1 + 
-            voice_len * 10 + 
-            photo * 25 +
-            sticker * 5)
-
-        if score > 2000: 
-            # As usually is a big part of copy-paste; 
-            # Exclude for selection cleannes
-            score = 1
-            #print(str(mess)[:200])
-
-        return score
-        
-
-    if chat["type"] == "saved_messages":
-        companion_name = my_name
-    else:
-        if chat["id"] in peoples_name:
-            companion_name = peoples_name[chat["id"]]
-        else:
-            companion_name = chat["name"] # BUG!!!
-    
-    sum_all = np.zeros(3, dtype=np.intc)
-    sum_score = np.zeros((2,min_in_day), dtype=np.intc)
-    calendar = dict()
-
-    for mess in chat["messages"]:
-        if mess["type"] == "service":
-            continue
-
-        time = datetime.datetime.fromisoformat(mess["date"])
-        minute_of_day = time.hour * 60 + time.minute 
-        day = time.date()
-        
-        author_id = mess["from_id"]
-        
-        if author_id in peoples_name:
-            author = peoples_name[author_id]
-        else:
-            author = mess["from"]
-        if "forwarded_from" in mess:
-            author = mess["forwarded_from"]
-        if author not in [my_name, companion_name]:
-            author = "other"
-
-        score = get_score(mess)
-
-        if day not in calendar:
-            calendar[day] = score
-        else:
-            calendar[day] += score
-
-        if author == my_name:
-            sum_score[0,minute_of_day] += score
-            sum_all[0] += score
-        elif author == companion_name:
-            sum_score[1,minute_of_day] += score
-            sum_all[1] += score
-        else:
-            sum_all[2] += score
-        
-
-    if companion_name == my_name:
-        companion_name = "Saved messages"
-    if str(companion_name) == "None":
-        companion_name = "Deleted"
-    return companion_name,sum_all,sum_score,calendar
 
 
 
@@ -410,30 +294,14 @@ def draw_chat(id, smooth_id, main_mode):
 
 
 def main(debug = False):
-    global base,chat_day_data,count_of_chats
+    global my_name,chat_day_data,count_of_chats
 
     os.system('clear')
     print_time_label("Time, start reading")
-    fh = open("result_short.json", "r")
-    if not debug:
-        fh = open("result.json", "r")
-    base = json.load(fh)
-    print_time_label("Time, end reading")
 
-    get_contacts_data()
-    count_of_chats = len(base["chats"]["list"])
-
-    chat_day_data = []
-    for chat in base["chats"]["list"]:
-        chat_day_data.append(parse_chat(chat))
-    chat_day_data.sort(key=lambda a: sum(a[1]), reverse=True) 
-    
-    if False:
-        for i in range(1, count_of_chats):
-            for x in chat_day_data[i][3].keys():
-                if x not in chat_day_data[0][3]:
-                    chat_day_data[0][3][x] = 0
-                chat_day_data[0][3][x] += chat_day_data[i][3][x]
+    input_file = "result_short.json"
+    my_name,chat_day_data = messparser.prepare_data(input_file)
+    count_of_chats = len(chat_day_data)
 
     print_time_label("Time, end prepare:")
 
