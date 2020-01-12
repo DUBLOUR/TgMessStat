@@ -4,24 +4,6 @@ import json
 import numpy as np
 
 def prepare_data(file_name="result.json"):
-    min_in_day = 1440
-    my_name = str()
-    peoples_name = dict()
-
-    def get_contacts_data():
-        nonlocal peoples_name
-
-        me = base["personal_information"]
-        nonlocal my_name
-        my_name = me["first_name"] + " " + me["last_name"]
-        peoples_name[me["user_id"]] = my_name
-        
-        contacts = base["frequent_contacts"]["list"]
-        for x in contacts:
-            if "category" in x and x["category"] == "people":
-                peoples_name[x["id"]] = str(x["name"])
-
-        
 
     def parse_chat(chat):
 
@@ -69,17 +51,30 @@ def prepare_data(file_name="result.json"):
 
             return score
             
+        def get_his_name_and_id():
+            if chat["type"] == "saved_messages":
+                return my_name, my_id
+        
+            his_name = chat["name"]
+            his_id = 0
 
-        if chat["type"] == "saved_messages":
-            companion_name = my_name
-        else:
-            if chat["id"] in peoples_name:
-                companion_name = peoples_name[chat["id"]]
-            else:
-                companion_name = chat["name"] # BUG!!!
+            for mess in chat["messages"]:
+                if mess["type"] == "service":
+                    continue
+
+                if "forwarded_from" not in mess and mess["from_id"] != my_id:
+                    #If message in not forwarded then is can be only I or he
+                    his_name = mess["from"]
+                    his_id = mess["from_id"]
+                    break
+            
+            return his_name, his_id
+
+
+        his_name,his_id = get_his_name_and_id()
         
         sum_all = np.zeros(3, dtype=np.intc)
-        sum_score = np.zeros((2,min_in_day), dtype=np.intc)
+        sum_score = np.zeros((2, 24*60), dtype=np.intc)
         calendar = dict()
 
         for mess in chat["messages"]:
@@ -90,17 +85,6 @@ def prepare_data(file_name="result.json"):
             minute_of_day = time.hour * 60 + time.minute 
             day = time.date()
             
-            author_id = mess["from_id"]
-            
-            if author_id in peoples_name:
-                author = peoples_name[author_id]
-            else:
-                author = mess["from"]
-            if "forwarded_from" in mess:
-                author = mess["forwarded_from"]
-            if author not in [my_name, companion_name]:
-                author = "other"
-
             score = get_score(mess)
 
             if day not in calendar:
@@ -108,33 +92,41 @@ def prepare_data(file_name="result.json"):
             else:
                 calendar[day] += score
 
-            if author == my_name:
-                sum_score[0,minute_of_day] += score
-                sum_all[0] += score
-            elif author == companion_name:
-                sum_score[1,minute_of_day] += score
-                sum_all[1] += score
-            else:
-                sum_all[2] += score
-            
 
-        if companion_name == my_name:
-            companion_name = "Saved messages"
-        if str(companion_name) == "None":
-            companion_name = "Deleted"
-        return companion_name,sum_all,sum_score,calendar
+            author_id = mess["from_id"]
+            if "forwarded_from" in mess:
+                author_id = 0
+
+            author = [my_id, his_id, 0].index(author_id)
+
+            sum_all[author] += score
+            if author != 2:
+                sum_score[author, minute_of_day] += score
+
+        if his_name == my_name:
+            his_name = "Saved messages"
+        if str(his_name) == "None":
+            his_name = "Deleted"
+
+        #TODO: add check on emoji in name
+
+        return his_name,sum_all,sum_score,calendar
 
 
 
     fh = open(file_name, "r")
     base = json.load(fh)
 
-    get_contacts_data()
+    me = base["personal_information"]
+    my_name = me["first_name"] + " " + me["last_name"]
+    my_id = me["user_id"]
 
     chats_data = []
     for chat in base["chats"]["list"]:
-        chats_data.append(parse_chat(chat))
+        if chat["type"] in ["saved_messages", "personal_chat"]:
+            chats_data.append(parse_chat(chat))
+
     chats_data.sort(key=lambda a: sum(a[1]), reverse=True) 
 
 
-    return my_name,chats_data
+    return my_name, chats_data
