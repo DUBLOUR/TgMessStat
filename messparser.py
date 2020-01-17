@@ -2,8 +2,10 @@ import datetime
 import time
 import json
 import numpy as np
+from random import shuffle  
 
-def prepare_data(file_name="result.json", summary=True):
+
+def prepare_data(file_name="result.json", summary=True, privacy_mode=False):
 
     def parse_chat(chat):
 
@@ -110,7 +112,7 @@ def prepare_data(file_name="result.json", summary=True):
 
         #TODO: add check on emoji in name
 
-        return his_name, sum_all, sum_score, calendar
+        return [his_name, sum_all, sum_score, calendar]
 
 
     def add_summary():
@@ -129,8 +131,32 @@ def prepare_data(file_name="result.json", summary=True):
 
         chats_data.append(["Summary", sum_all, sum_score, calendar])
 
+
+
+    def change_names_to_random():
+        def gen_rand_names(n):
+                #Thank to github.com/sindresorhus/supervillains for this list
+            fh = open("random_names.json", "r")
+            names = json.load(fh)
+
+            while len(names) < n:
+                names.append(*names)
+            shuffle(names)
+            print(n, names)
+            return names[:n]
+
+
+        nonlocal chats_data
+        count_of_chats = len(chats_data)
+        random_names = gen_rand_names(count_of_chats)
+        for i in range(count_of_chats):
+            chats_data[i][0] = random_names[i]
+
+
+
     fh = open(file_name, "r")
     base = json.load(fh)
+    fh.close()
 
     me = base["personal_information"]
     my_name = me["first_name"] + " " + me["last_name"]
@@ -146,5 +172,7 @@ def prepare_data(file_name="result.json", summary=True):
 
     chats_data.sort(key=lambda a: sum(a[1]), reverse=True) 
 
+    if privacy_mode:
+        change_names_to_random()
 
     return my_name, chats_data
