@@ -89,7 +89,7 @@ def main(debug = False):
     os.system('clear')
     print_time_label("Time, start reading")
 
-    input_file = "/home/admin/tel/result.json"
+    input_file = "result.json"
     if debug:
         input_file = "result_short.json"
     my_name, chat_day_data = \
