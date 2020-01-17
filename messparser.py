@@ -3,7 +3,7 @@ import time
 import json
 import numpy as np
 
-def prepare_data(file_name="result.json"):
+def prepare_data(file_name="result.json", summary=True):
 
     def parse_chat(chat):
 
@@ -110,9 +110,24 @@ def prepare_data(file_name="result.json"):
 
         #TODO: add check on emoji in name
 
-        return his_name,sum_all,sum_score,calendar
+        return his_name, sum_all, sum_score, calendar
 
 
+    def add_summary():
+        sum_all = np.zeros(3, dtype=np.intc)
+        sum_score = np.zeros((2, 24*60), dtype=np.intc)
+        calendar = dict()
+
+        for chat in chats_data:
+            sum_all += chat[1]
+            sum_score += chat[2]
+
+            for x in chat[3].keys():
+                if x not in calendar:
+                    calendar[x] = 0
+                calendar[x] += chat[3][x]
+
+        chats_data.append(["Summary", sum_all, sum_score, calendar])
 
     fh = open(file_name, "r")
     base = json.load(fh)
@@ -125,6 +140,9 @@ def prepare_data(file_name="result.json"):
     for chat in base["chats"]["list"]:
         if chat["type"] in ["saved_messages", "personal_chat"]:
             chats_data.append(parse_chat(chat))
+
+    if summary:
+        add_summary()
 
     chats_data.sort(key=lambda a: sum(a[1]), reverse=True) 
 

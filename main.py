@@ -65,10 +65,9 @@ def press(event):
     if key == "]": smooth_id += 1; ev = 2
     
     if key == " ":
-        ev = 3
         main_plot_mode ^= 1
-        print("changed")
-
+        ev = 3
+        
     if ev != 0:
         last_press_event_time = time.process_time()
         draw_chat(now_chat_id, smooth_id, main_plot_mode)
@@ -90,10 +89,10 @@ def main(debug = False):
     os.system('clear')
     print_time_label("Time, start reading")
 
-    input_file = "result.json"
+    input_file = "/home/admin/tel/result.json"
     if debug:
         input_file = "result_short.json"
-    my_name,chat_day_data = messparser.prepare_data(input_file)
+    my_name,chat_day_data = messparser.prepare_data(input_file, summary=False)
 
     print_time_label("Time, end prepare:")
     build_plot_grid()

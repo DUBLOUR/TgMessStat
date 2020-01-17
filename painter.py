@@ -10,8 +10,9 @@ def draw_chat(
 
     min_in_day = 1440
     possible_smooth = [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 15, 16, 18, 20, 24, 30, 32, 36, 40, 45, 48, 60]
-    possible_smooth = [10, 12, 15, 16, 18, 20, 24, 30, 32, 36, 40, 45, 48, 60] #divisors of 1440 (min in day)
-    
+    possible_smooth = [10, 12, 15, 16, 18, 20, 24, 30, 32, 36, 40, 45, 48, 60]
+    possible_smooth = [10, 15, 20, 30, 40, 45, 60] #divisors of 1440 (minutes in day)
+        
 
     count_of_chats = len(chat_day_data)
     id = (id + count_of_chats) % count_of_chats
@@ -168,7 +169,7 @@ def draw_chat(
             # Set green part (forwarded message) in central bottom part
             return -90 + 360*(sizes[2]/(2*sum(sizes)))
 
-        pie_plot.pie(sizes, explode=explode, autopct='%1.1f%%',
+        pie_plot.pie(sizes, wedgeprops=dict(width=1.0), explode=explode, autopct='%1.1f%%',
                 shadow=True, startangle=get_angle())
         pie_plot.format_coord = lambda x,y: None
     
