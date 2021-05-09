@@ -93,7 +93,7 @@ def main(debug = False):
     if debug:
         input_file = "result_short.json"
     my_name, chat_day_data = \
-        messparser.prepare_data(input_file, summary=False, privacy_mode=True)
+        messparser.prepare_data(input_file, summary=False, privacy_mode=False)
 
     print_time_label("Time, end prepare:")
     build_plot_grid()

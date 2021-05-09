@@ -70,11 +70,15 @@ def prepare_data(file_name="result.json", summary=True, privacy_mode=False):
                     his_id = mess["from_id"]
                     break
             
+            #if isinstance(his_id, str) and len(his_id) >= 4 and his_id[:4] == "user":
+            #    his_id = int(his_id[4:])
+            
             return his_name, his_id
 
 
         his_name,his_id = get_his_name_and_id()
-        
+        print(his_name,his_id)
+
         sum_all = np.zeros(3, dtype=np.intc)
         sum_score = np.zeros((2, 24*60), dtype=np.intc)
         calendar = dict()
@@ -96,10 +100,14 @@ def prepare_data(file_name="result.json", summary=True, privacy_mode=False):
 
 
             author_id = mess["from_id"]
+            #if isinstance(author_id, str) and len(author_id) >= 4 and author_id[:4] == "user":
+            #    author_id = int(author_id[4:])
             if "forwarded_from" in mess:
                 author_id = 0
 
-            author = [my_id, his_id, 0].index(author_id)
+            #print(my_id, his_id, author_id)
+
+            author = [my_id, his_id, author_id].index(author_id)
 
             sum_all[author] += score
             if author != 2:
@@ -160,7 +168,7 @@ def prepare_data(file_name="result.json", summary=True, privacy_mode=False):
 
     me = base["personal_information"]
     my_name = me["first_name"] + " " + me["last_name"]
-    my_id = me["user_id"]
+    my_id = "user" + str(me["user_id"])
 
     chats_data = []
     for chat in base["chats"]["list"]:
